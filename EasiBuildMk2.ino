@@ -10,8 +10,8 @@
 //
 // LiquidCrystal_I2C: Francisco Malpartida: https://arduino-info.wikispaces.com/LCD-Blue-I2C
 //
-// Sidetone generation using Adrian Freed's DDS sine wave generator:
-//   http://www.adrianfreed.com/content/arduino-sketch-high-frequency-precision-sine-wave-tone-sound-synthesis
+// Sidetone generation using Martin Nawrath's DDS sine wave generator:
+//  http://interface.khm.de/index.php/lab/interfaces-advanced/arduino-dds-sinewave-generator/
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -25,135 +25,113 @@
 #include <Wire.h>
 
 // CHANGE_PINS
+// Right-hand side of Arduino Micro...
+// Input pins are all on PINB for rapid reading in the pin change interrupt
+// service routine.
 const int dah_in = 12;
 const int dit_in = 11;
 const int encr_in = 10;
 const int encl_in = 9;
 const int btn_in = 8;
 const int band1_out = 7;
+const int rxtx_out = 6;
+const int sidetone_out = 5; // PWM, with RC low-pass filter network to convert
+                            // to analogue. On OCR3A, PWM phase correct.
+const int key_out = 4;
+// display is on 2 and 3, i2c.
+
+// Left-hand side of Arduino Micro...
 const int band2_out = 19;
 const int band3_out = 18;
 const int dds_clock_out = 14;
 const int dds_update_out = 15;
 const int dds_data_out = 16;
 const int dds_reset_out = 17;
-const int sidetone_out = 6;
-const int rxtx_out = 5;
-const int key_out = 4;
-// display is on 2 and 3, i2c.
 
 //==============================================================================
-//=== SIDETONE OSCILLATOR (Adrian Freed)
+//=== SIDETONE OSCILLATOR (Thanks to Martin Nawrath)
 //==============================================================================
-
-// Atmega table-based digital oscillator
-// using "DDS" with 32-bit phase register to illustrate efficient
-// accurate frequency.
-// 20-bits is on the edge of people pitch perception
-// 24-bits has been the usual resolution employed.
-// so we use 32-bits in C, i.e. long.
-//
-// smoothly interpolates frequency and amplitudes illustrating
-// lock-free approach to synchronizing foreground process control and
-// background (interrupt) sound synthesis.
-// copyright 2009. Adrian Freed. All Rights Reserved.
-// Use this as you will but include attribution in derivative works.
-// tested on the Arduino Mega
-const unsigned int LUTsize = 1<<8;
-// Look Up Table size: has to be power of 2 so that the modulo LUTsize
-// can be done by picking bits from the phase
-// avoiding arithmetic
-const int8_t sintable[LUTsize] PROGMEM = { // already biased with +127
-    127,130,133,136,139,143,146,149,152,155,158,161,164,167,170,173,
-    176,179,182,184,187,190,193,195,198,200,203,205,208,210,213,215,
-    217,219,221,224,226,228,229,231,233,235,236,238,239,241,242,244,
-    245,246,247,248,249,250,251,251,252,253,253,254,254,254,254,254,
-    255,254,254,254,254,254,253,253,252,251,251,250,249,248,247,246,
-    245,244,242,241,239,238,236,235,233,231,229,228,226,224,221,219,
-    217,215,213,210,208,205,203,200,198,195,193,190,187,184,182,179,
-    176,173,170,167,164,161,158,155,152,149,146,143,139,136,133,130,
-    127,124,121,118,115,111,108,105,102,99,96,93,90,87,84,81,
-    78,75,72,70,67,64,61,59,56,54,51,49,46,44,41,39,
-    37,35,33,30,28,26,25,23,21,19,18,16,15,13,12,10,
-    9,8,7,6,5,4,3,3,2,1,1,0,0,0,0,0,
-    0,0,0,0,0,0,1,1,2,3,3,4,5,6,7,8,
-    9,10,12,13,15,16,18,19,21,23,25,26,28,30,33,35,
-    37,39,41,44,46,49,51,54,56,59,61,64,67,70,72,75,
-    78,81,84,87,90,93,96,99,102,105,108,111,115,118,121,124
-};
-
-const int timerPrescale=1<<9;
-
-struct oscillator
-{
-    uint32_t phase;
-    int32_t phase_increment;
-    int32_t frequency_increment;
-    int16_t amplitude;
-    int16_t amplitude_increment;
-    uint32_t framecounter;
-} o1;
-
-const int fractionalbits = 16; // 16 bits fractional phase
-// compute a phase increment from a frequency
-unsigned long phaseinc(float frequency_in_Hz)
-{
-    return LUTsize *(1l<<fractionalbits)* frequency_in_Hz/(F_CPU/timerPrescale);
-}
-
-// Timer setup constants
-// CHANGE_BOARD
-// CHANGE_PINS
-#define PWM_VALUE_DESTINATION OCR1B
-#define PWM_INTERRUPT TIMER1_OVF_vect
-
-
-void initializeOscillatorTimer() {
-    // Set up PWM with Clock/256 (i.e. 31.25kHz on Arduino 16MHz;
-    // and phase accurate
-    // Timer 1
-    TCCR1A = _BV(COM1B1) | _BV(WGM10);
-    TCCR1B = _BV(CS10);
-    TIMSK1 = _BV(TOIE1);
-    pinMode(sidetone_out, OUTPUT);
-}
 
 void shapeSidetone(); // forward declaration
 
-// this is the heart of the wavetable synthesis. A phasor looks up a sine table
-int8_t outputvalue = 0;
-SIGNAL(PWM_INTERRUPT)
-{
-    PWM_VALUE_DESTINATION = outputvalue; // output first to minimize jitter
-    outputvalue = (((uint8_t) (o1.amplitude >> 8)) *
-       pgm_read_byte(sintable + ((o1.phase >> 16) % LUTsize))) >> 8;
-    o1.phase += (uint32_t) o1.phase_increment;
+// table of 256 sine values / one sine period / stored in flash memory
+const uint8_t sine256[] PROGMEM = {
+  127,130,133,136,139,143,146,149,152,155,158,161,164,167,170,173,176,178,181,184,187,190,192,195,198,200,203,205,208,210,212,215,217,219,221,223,225,227,229,231,233,234,236,238,239,240,
+  242,243,244,245,247,248,249,249,250,251,252,252,253,253,253,254,254,254,254,254,254,254,253,253,253,252,252,251,250,249,249,248,247,245,244,243,242,240,239,238,236,234,233,231,229,227,225,223,
+  221,219,217,215,212,210,208,205,203,200,198,195,192,190,187,184,181,178,176,173,170,167,164,161,158,155,152,149,146,143,139,136,133,130,127,124,121,118,115,111,108,105,102,99,96,93,90,87,84,81,78,
+  76,73,70,67,64,62,59,56,54,51,49,46,44,42,39,37,35,33,31,29,27,25,23,21,20,18,16,15,14,12,11,10,9,7,6,5,5,4,3,2,2,1,1,1,0,0,0,0,0,0,0,1,1,1,2,2,3,4,5,5,6,7,9,10,11,12,14,15,16,18,20,21,23,25,27,29,31,
+  33,35,37,39,42,44,46,49,51,54,56,59,62,64,67,70,73,76,78,81,84,87,90,93,96,99,102,105,108,111,115,118,121,124
 
-    shapeSidetone();
+};
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 
-    // ramp amplitude and frequency
-    // TODO not needed?
-    if (o1.framecounter > 0)
-    {
-        --o1.framecounter;
-        o1.amplitude += o1.amplitude_increment;
-        o1.phase_increment += o1.frequency_increment;
-    }
+double dfreq;
+// const double refclk=31372.549;  // =16MHz / 510
+const double refclk=31376.6;      // measured
+
+// variables used inside interrupt service declared as voilatile
+volatile byte icnt;              // var inside interrupt
+volatile byte icnt1;             // var inside interrupt
+volatile byte c4ms;              // counter incremented all 4ms
+volatile unsigned long phaccu;   // phase accumulator
+volatile unsigned long tword_m;  // dds tuning word m
+volatile double volume;
+//volatile int16_t volumeIncrement;
+
+void setSidetoneFrequency(const double dfreq) {
+  cbi(TIMSK3, TOIE3);                  // disble Timer3 Interrupt
+  tword_m=pow(2,32) * dfreq / refclk;  // calulate DDS new tuning word
+  sbi(TIMSK3, TOIE3);                  // enable Timer3 Interrupt 
+  /*
+  Serial.print(dfreq);
+  Serial.print("  ");
+  Serial.println(tword_m);
+  */
 }
 
-void setupOscillator()
-{
-    o1.phase = 0;
-    o1.phase_increment = 0 ;
-    o1.amplitude_increment = 0; // TODO needed?
-    o1.frequency_increment = 0; // TODO needed?
-    o1.framecounter = 0; // TODO needed?
-    o1.amplitude = 0; // no amplitude
+//******************************************************************
+// Sidetone Timer3 setup
+// set prescaler to 1, PWM mode to phase correct PWM,  16000000/510 = 31372.55 Hz clock
+void setupSidetoneTimer3() {
+  volume = 0.0;
+  pinMode(sidetone_out, OUTPUT);
 
-    // TODO get the persistent sidetone frequency from EEPROM
-    o1.phase_increment = phaseinc(600.0);
+  // Timer3 Clock Prescaler to : 1 (no prescaling; use system clock)
+  sbi (TCCR3B, CS30);
+  cbi (TCCR3B, CS31);
+  cbi (TCCR3B, CS32);
 
-    initializeOscillatorTimer();
+  // Timer3 PWM Mode set to Phase Correct PWM
+  cbi (TCCR3A, COM3A0);  // clear OC3A on Compare Match when counting up, set on Compare Match when counting down
+  sbi (TCCR3A, COM3A1);
+
+  sbi (TCCR3A, WGM30);  // Mode 1  / Phase Correct PWM
+  cbi (TCCR3A, WGM31);
+  cbi (TCCR3B, WGM32);
+  
+  setSidetoneFrequency(500.0);
+  
+  sbi (TIMSK3,TOIE3);              // enable Timer3 Interrupt  
+}
+
+//******************************************************************
+// Timer3 Interrupt Service at 31372,550 KHz = 32uSec
+// this is the timebase REFCLOCK for the DDS generator
+// FOUT = (M (REFCLK)) / (2 exp 32)
+ISR(TIMER3_OVF_vect) {
+
+  phaccu = phaccu + tword_m; // soft DDS, phase accu with 32 bits
+  icnt = phaccu >> 24;     // use upper 8 bits for phase accu as frequency information
+                           // read value fron ROM sine table and send to PWM DAC
+  OCR3A = (byte) ((double) (pgm_read_byte_near(sine256 + icnt) * volume));
+  
+  if(icnt1++ == 125) {  // increment variable c4ms all 4 milliseconds
+    c4ms++;
+    icnt1=0;
+  }
+  
+  shapeSidetone();
 }
 
 
@@ -161,35 +139,34 @@ void setupOscillator()
 //=== SIDETONE SHAPING
 //==============================================================================
 volatile bool transmit = false; // true when 'morse key' down
-int8_t txState = 0;
+volatile int8_t txState = 0;
 #define TXS_IDLE_SILENT 0
 #define TXS_ENABLE_RAMPUP 1
 #define TXS_ON 2
 #define TXS_DISABLE_RAMPDOWN 3
-int8_t rampCycles = 0;
-#define RAMP_CYCLES 30
+volatile int8_t rampCycles = 0;
+#define RAMP_CYCLES 5
 
 // called at end of sidetone PWM timer
 void shapeSidetone() {
     switch (txState) {
         case TXS_IDLE_SILENT:
             if (transmit) {
-                rampCycles = RAMP_CYCLES;
+                rampCycles = 0;
                 txState = TXS_ENABLE_RAMPUP;
-                o1.amplitude = 0;
-                o1.amplitude_increment = 3; // TODO this could be the sidetone volume?
+                volume = 0.0;
             }
             break;
         case TXS_ENABLE_RAMPUP:
             if (!transmit) { // early termination, bounce?
                 txState = TXS_DISABLE_RAMPDOWN;
-                o1.amplitude_increment = -o1.amplitude_increment;
             } else {
-                if (rampCycles == 0) {
+                if (rampCycles == RAMP_CYCLES) {
                     txState = TXS_ON;
-                    o1.amplitude_increment = 0; // stop incrementing amplitude
+                    volume = 1.0;
                 } else {
-                    rampCycles--;
+                    volume = rampCycles/RAMP_CYCLES;
+                    rampCycles++;
                 }
             }
             break;
@@ -197,19 +174,18 @@ void shapeSidetone() {
             if (!transmit) { // key up?
                 txState = TXS_DISABLE_RAMPDOWN;
                 rampCycles = RAMP_CYCLES;
-                o1.amplitude_increment = -3; // TODO this could be the sidetone volume?
             }
             break;
         case TXS_DISABLE_RAMPDOWN:
             if (transmit) { // key down again
+                rampCycles = 0;
                 txState = TXS_ENABLE_RAMPUP;
-                o1.amplitude_increment = -o1.amplitude_increment;
             } else {
                 if (rampCycles == 0) {
                     txState = TXS_IDLE_SILENT;
-                    o1.amplitude = 0;
-                    o1.amplitude_increment = 0; // stop decrementing amplitude
+                    volume = 0;
                 } else {
+                    volume = rampCycles/RAMP_CYCLES;
                     rampCycles--;
                 }
             }
@@ -301,7 +277,7 @@ void setup() {
     pinMode(band1_out, OUTPUT);
     pinMode(band2_out, OUTPUT);
     pinMode(band3_out, OUTPUT);
-    
+
     pinMode(rxtx_out, OUTPUT); 
     pinMode(key_out, OUTPUT);
     
@@ -310,7 +286,7 @@ void setup() {
     pinMode(dds_data_out, OUTPUT);
     pinMode(dds_reset_out, OUTPUT);
     
-    setupOscillator();
+    setupSidetoneTimer3();
 
             // 0123456789ABCDEF
     lcd.print("seconds spent :");
@@ -321,17 +297,48 @@ void setup() {
 }
 
 // main loop
+bool oldtransmit = true; // display fostamin    
+char ch = 'x';
+int oldstate = 99; // display fostamin
 void loop() {
-    long oldcount = -1;
     yield();
 
-    transmit = (digitalRead(dit_in) == LOW || digitalRead(dah_in) == LOW); // DIAG
-
-    if (oldcount != count) {
-        lcd.setCursor(0, 1);
-        lcd.print(count);
-        Serial.println(count); 
-        oldcount = count;
+    if (digitalRead(dit_in) == LOW) {
+        transmit = true;
     }
+    if (digitalRead(dah_in) == LOW) {
+        transmit = false;
+    }
+
+    if (oldtransmit != transmit) {
+        lcd.setCursor(0, 1);
+        lcd.print(transmit ? "*" : "O");
+        oldtransmit = transmit;
+    }
+    
+    if (oldstate != txState) {
+        switch (txState) {
+            case TXS_IDLE_SILENT:
+                ch = 'i';
+                break;
+            case TXS_ENABLE_RAMPUP:
+                ch = 'u';
+                break;
+            case TXS_ON:
+                ch = 'o';
+                break;
+            case TXS_DISABLE_RAMPDOWN:
+                ch = 'd';
+                break;
+        }
+        lcd.setCursor(1, 1);
+        lcd.print(ch);
+        lcd.print(' ');
+        lcd.print(rampCycles);
+        lcd.print(' ');
+        lcd.print(volume);
+        lcd.print(' ');
+        oldstate = txState;
+    }    
 }
 
