@@ -26,12 +26,7 @@
 
 #include "PinAssignments.h"
 #include "SidetoneOscillator.h"
-
-//==============================================================================
-//=== LCD DISPLAY
-//==============================================================================
-
-LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
+#include "Display.h"
 
 //==============================================================================
 //=== PIN CHANGE INTERRUPT
@@ -97,9 +92,7 @@ defineTaskLoop(Task2)
 
 // main setup
 void setup() {
-    lcd.begin(16, 2);
-    lcd.backlight();
-    lcd.setCursor(0, 0);
+    setupDisplay();
     
     pinMode(dah_in, INPUT_PULLUP);
     pinMode(dit_in, INPUT_PULLUP);
