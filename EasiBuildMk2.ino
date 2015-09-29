@@ -7,11 +7,6 @@
 //
 // Acknowledgements:
 // SCoop: Fabrice Oudert http://forum.arduino.cc/index.php?topic=137801.0
-//
-// LiquidCrystal_I2C: Francisco Malpartida: https://arduino-info.wikispaces.com/LCD-Blue-I2C
-//
-// Sidetone generation using Martin Nawrath's DDS sine wave generator:
-//  http://interface.khm.de/index.php/lab/interfaces-advanced/arduino-dds-sinewave-generator/
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -92,25 +87,8 @@ defineTaskLoop(Task2)
 
 // main setup
 void setup() {
+    setupPins();
     setupDisplay();
-    
-    pinMode(dah_in, INPUT_PULLUP);
-    pinMode(dit_in, INPUT_PULLUP);
-    pinMode(encr_in, INPUT_PULLUP);
-    pinMode(encl_in, INPUT_PULLUP);
-    pinMode(btn_in, INPUT_PULLUP);
-    
-    pinMode(band1_out, OUTPUT);
-    pinMode(band2_out, OUTPUT);
-    pinMode(band3_out, OUTPUT);
-
-    pinMode(rxtx_out, OUTPUT); 
-    pinMode(key_out, OUTPUT);
-    
-    pinMode(dds_clock_out, OUTPUT);
-    pinMode(dds_update_out, OUTPUT);
-    pinMode(dds_data_out, OUTPUT);
-    pinMode(dds_reset_out, OUTPUT);
     
     setupSidetoneTimer3();
 

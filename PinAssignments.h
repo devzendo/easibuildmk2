@@ -31,6 +31,25 @@ const int dds_update_out = 15;
 const int dds_data_out = 16;
 const int dds_reset_out = 17;
 
+void setupPins() {
+    pinMode(dah_in, INPUT_PULLUP);
+    pinMode(dit_in, INPUT_PULLUP);
+    pinMode(encr_in, INPUT_PULLUP);
+    pinMode(encl_in, INPUT_PULLUP);
+    pinMode(btn_in, INPUT_PULLUP);
+    
+    pinMode(band1_out, OUTPUT);
+    pinMode(band2_out, OUTPUT);
+    pinMode(band3_out, OUTPUT);
+
+    pinMode(rxtx_out, OUTPUT); 
+    pinMode(key_out, OUTPUT);
+    
+    pinMode(dds_clock_out, OUTPUT);
+    pinMode(dds_update_out, OUTPUT);
+    pinMode(dds_data_out, OUTPUT);
+    pinMode(dds_reset_out, OUTPUT);
+}
 
 #endif
 
