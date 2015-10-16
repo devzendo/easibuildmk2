@@ -11,8 +11,8 @@
 // 1. The normal EasiBuild Mk 2 firmware
 // 2. A control board hardware test harness
 // "Out of the box", as checked into the repository, you get 1. If you want to
-// build the test harness, uncomment this line:
-//#define TEST_HARNESS
+// build one of the test harnesses, uncomment the appropriate line:
+#define INPUTS_TEST_HARNESS
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -29,8 +29,9 @@
 #include "SidetoneOscillator.h"
 #include "Display.h"
 
-#ifdef TEST_HARNESS
+#ifdef INPUTS_TEST_HARNESS
 #include "TestHarness.h"
+// other test harnesses...
 #else
 #include "Transceiver.h"
 #endif
