@@ -74,7 +74,7 @@ void setup() {
     setupSidetoneTimer3();
 
             // 0123456789ABCDEF
-    lcd.print(".LRB????       ");
+    lcd.print(".LRB-???       ");
     Serial.begin(115200);
     
     mySCoop.start();
@@ -84,8 +84,8 @@ void setup() {
 //bool oldtransmit = true; // display fostamin    
 //char ch = 'x';
 //int oldstate = 99; // display fostamin
-uint16_t oldPinB = 0xffff; // display fostamin
-uint16_t newPinB = 0;
+uint16_t oldPins = 0xffff; // display fostamin
+uint16_t newPins = 0;
 uint16_t bit;
 int bufidx;
 char buffer[20];
@@ -132,8 +132,8 @@ void loop() {
         oldstate = txState;
     }
     */
-    newPinB = PINB;
-    if (oldPinB != newPinB) {
+    newPins = (PINB & 0xF0) | ((PIND & 0x40) >> 3);
+    if (oldPins != newPins) {
        lcd.setCursor(9, 0);
        sprintf(buffer, "0x%04X", countx++);
        lcd.print(buffer);
@@ -142,13 +142,13 @@ void loop() {
        bit = 0x0080;
        bufidx = 0;
        while (bit != 0) {
-           buffer[bufidx++] = (newPinB & bit) == 0 ? '0' : '1';
+           buffer[bufidx++] = (newPins & bit) == 0 ? '0' : '1';
            bit >>= 1;
        }
        
-       sprintf(buffer + bufidx, " 0x%04X", newPinB);
+       sprintf(buffer + bufidx, " 0x%04X", newPins);
        lcd.print(buffer);
-       oldPinB = newPinB;
+       oldPins = newPins;
     }
 }
 
