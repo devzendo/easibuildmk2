@@ -9,13 +9,22 @@
 
 // CHANGE_PINS
 // Right-hand side of Arduino Micro...
-// Input pins are all on PINB for rapid reading in the pin change interrupt
-// service routine.
-const int dah_in = 12;
-const int dit_in = 11;
-const int encr_in = 10;
-const int encl_in = 9;
-const int btn_in = 8;
+// Input pins are all on PINB or PIND for rapid reading in the interrupt service routine.
+const int dah_in = 12; // PIND
+const int dah_bit = 0x08;
+
+const int dit_in = 11; // PINB
+const int dit_bit = 0x80;
+
+const int encr_in = 10;// PINB
+const int encr_bit = 0x20;
+
+const int encl_in = 9; // PINB
+const int encl_bit = 0x40;
+
+const int btn_in = 8;  // PINB
+const int btn_bit = 0x10;
+
 const int band1_out = 7;
 const int rxtx_out = 6;
 const int sidetone_out = 5; // PWM, with RC low-pass filter network to convert
@@ -49,6 +58,21 @@ void setupPins() {
     pinMode(dds_update_out, OUTPUT);
     pinMode(dds_data_out, OUTPUT);
     pinMode(dds_reset_out, OUTPUT);
+}
+
+// forward declaration
+void inputPinChange(uint16_t changedPins);
+
+// input change detection, called in loop() for test harness, or in ISR
+uint16_t oldPins = 0xffff; // display fostamin
+uint16_t newPins = 0;
+
+void inputSense() {
+    newPins = (PINB & 0xF0) | ((PIND & 0x40) >> 3);
+    if (oldPins != newPins) {
+        oldPins = newPins;
+        inputPinChange(newPins);
+    }
 }
 
 #endif
