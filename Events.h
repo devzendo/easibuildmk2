@@ -2,6 +2,9 @@
 // Author: Matt Gumbley M0CUV <matt.gumbley@devzendo.org>
 //
 
+#ifndef _EVENTS_H_
+#define _EVENTS_H_
+
 const int evStateMask = 0x01;
 const int evOn = 0x01;
 const int evOff = 0x00;

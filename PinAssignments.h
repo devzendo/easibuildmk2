@@ -40,6 +40,15 @@ const int dds_update_out = 15;
 const int dds_data_out = 16;
 const int dds_reset_out = 17;
 
+inline uint16_t readPins() {
+    return (PINB & 0xF0) | ((PIND & 0x40) >> 3);
+}
+
+// input change detection, called in loop() for test harness, or in ISR
+uint16_t oldPins;
+uint16_t newPins;
+uint16_t initialPins;
+
 void setupPins() {
     pinMode(dah_in, INPUT_PULLUP);
     pinMode(dit_in, INPUT_PULLUP);
@@ -58,17 +67,15 @@ void setupPins() {
     pinMode(dds_update_out, OUTPUT);
     pinMode(dds_data_out, OUTPUT);
     pinMode(dds_reset_out, OUTPUT);
+
+    initialPins = oldPins = newPins = readPins();
 }
 
 // forward declaration
 void inputPinChange(uint16_t changedPins);
 
-// input change detection, called in loop() for test harness, or in ISR
-uint16_t oldPins = 0xffff; // display fostamin
-uint16_t newPins = 0;
-
 void inputSense() {
-    newPins = (PINB & 0xF0) | ((PIND & 0x40) >> 3);
+    newPins = readPins();
     if (oldPins != newPins) {
         oldPins = newPins;
         inputPinChange(newPins);

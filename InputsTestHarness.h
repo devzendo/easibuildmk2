@@ -8,15 +8,6 @@
 //=== MAIN SETUP AND LOOP
 //==============================================================================
 
-// main setup
-void setup() {
-    setupPins();
-    setupDisplay();
-    
-            // 0123456789ABCDEF
-    lcd.print(".LRB-???       ");
-}
-
 uint16_t bit;
 int bufidx;
 char buffer[20];
@@ -38,6 +29,19 @@ void inputPinChange(uint16_t changedPins) {
     sprintf(buffer + bufidx, " 0x%04X", newPins);
     lcd.print(buffer);
 }
+
+// main setup
+void setup() {
+    setupPins();
+    setupDisplay();
+    
+            // 0123456789ABCDEF
+    lcd.print(".LRB-???       ");
+    // initialise as if something has changed
+    oldPins = ~newPins;
+    inputPinChange(initialPins);
+}
+
 
 // main loop
 void loop() {
