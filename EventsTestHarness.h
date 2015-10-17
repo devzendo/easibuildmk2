@@ -42,11 +42,11 @@ void eventOccurred(int eventCode) {   //     XXX ....
         case evLeft : strcpy(buffer + 24, "<<<"); break;
         case evRight : strcpy(buffer + 24, ">>>"); break;
     }
-    buffer[27] = ' ';
     if (eventCode & evButtonMask) {
+        buffer[27] = ' ';
         strcpy(buffer + 28, eventCode & evStateMask ? "ON" : "OFF");
     } else {
-        sprintf(buffer + 28, "%d", eventCode & evVelocityMask);
+        buffer[27] = '\0';
     }
     Serial.println(buffer);
 }

@@ -1,6 +1,12 @@
 // EasiBuild Mk 2 Firmware: event definitions
 // Author: Matt Gumbley M0CUV <matt.gumbley@devzendo.org>
 //
+// Acknowledgements: Jack Ganssle for his article on firmware debouncing
+// http://www.ganssle.com/debouncing-pt2.htm
+//
+// Rotary encoder reading from an article at
+// http://makeatronics.blogspot.co.uk/2013/02/efficiently-reading-quadrature-with.html
+
 
 #ifndef _EVENTS_H_
 #define _EVENTS_H_
@@ -14,7 +20,6 @@ const int evDit = 0x40;
 const int evBtn = 0x20;
 const int evButtonMask = evDah | evDit | evBtn;
 
-const int evVelocityMask = 0x07;
 const int evLeft = 0x10;
 const int evRight = 0x08;
 const int evTypeMask = evDah | evDit | evBtn | evLeft | evRight;
@@ -69,6 +74,10 @@ private:
 Debouncer ditDebounce;
 Debouncer dahDebounce;
 Debouncer btnDebounce;
+static int8_t encoderLookupTable[] = {
+    0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0
+};
+static uint8_t encoderValue = 0;
 
 // input change to event conversion, called in loop or ISR
 void eventDecode(uint16_t rawPins) {
@@ -87,6 +96,13 @@ void eventDecode(uint16_t rawPins) {
         eventOccurred(evBtn | (btnDebounce.keyPressed ? evOff : evOn));
     }
     // rotary encoder....
+    encoderValue = encoderValue << 2;
+    encoderValue = encoderValue | ((rawPins & (enclBit | encrBit)) >> 5);
+    switch (encoderLookupTable[encoderValue & 0b1111]) {
+        case 0: break;
+        case 1: eventOccurred(evLeft); break;
+        case -1: eventOccurred(evRight); break;
+    }
 }
 
 #endif
