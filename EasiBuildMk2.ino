@@ -13,7 +13,7 @@
 // "Out of the box", as checked into the repository, you get 1. If you want to
 // build one of the test harnesses, uncomment the appropriate line:
 
-#define TRANSCEIVER
+//#define TRANSCEIVER
 
 // Displays all input pins as a bit in a binary/hex number with change count.
 //#define INPUTS_TEST_HARNESS
@@ -25,7 +25,7 @@
 //#define OUTPUTS_TEST_HARNESS
 
 // Shows interrupt handler input pin conversion to events on the serial output.
-//#define EVENTS_TEST_HARNESS
+#define EVENTS_TEST_HARNESS
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -41,6 +41,7 @@
 #include "PinAssignments.h"
 #include "SidetoneOscillator.h"
 #include "Display.h"
+#include "Events.h"
 
 #ifdef INPUTS_TEST_HARNESS
 #include "InputsTestHarness.h"
