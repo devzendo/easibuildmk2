@@ -18,12 +18,26 @@ void setup() {
     Serial.begin(115200);
 }
 
-char buffer[40];
+char buffer[50];
 int countx = 0;
 
-void eventOccurred(int eventCode) {
-    sprintf(buffer, "Cnt: 0x%04X Evt: 0x%04X", countx++, eventCode);
-    // actually display the event details...
+void eventOccurred(int eventCode) {   //     XXX ....
+              //     0123456789012345678901234567890
+    sprintf(buffer, "Cnt: 0x%04X Evt: 0x%04X ", countx++, eventCode);
+    switch (eventCode & evTypeMask) {
+        case evDit : strcpy(buffer + 24, "DIT"); break;
+        case evDah : strcpy(buffer + 24, "DAH"); break;
+        case evBtn : strcpy(buffer + 24, "BTN"); break;
+        case evLeft : strcpy(buffer + 24, "<<<"); break;
+        case evRight : strcpy(buffer + 24, ">>>"); break;
+    }
+    buffer[27] = ' ';
+    if (eventCode & evButtonMask) {
+        strcpy(buffer + 28, eventCode & evStateMask ? "ON" : "OFF");
+    } else {
+        sprintf(buffer + 28, "%d", eventCode & evVelocityMask);
+    }
+    Serial.println(buffer);
 }
 
 void inputPinChange(uint16_t changedPins) {

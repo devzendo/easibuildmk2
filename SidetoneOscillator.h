@@ -58,7 +58,7 @@ void setSidetoneFrequency(const double dfreq) {
 // set prescaler to 1, PWM mode to phase correct PWM,  16000000/510 = 31372.55 Hz clock
 void setupSidetoneTimer3() {
   volume = 0.0;
-  pinMode(sidetone_out, OUTPUT);
+  pinMode(sidetoneOut, OUTPUT);
 
   // Timer3 Clock Prescaler to : 1 (no prescaling; use system clock)
   sbi (TCCR3B, CS30);
