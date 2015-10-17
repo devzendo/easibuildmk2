@@ -39,9 +39,9 @@
 #include <Wire.h>
 
 #include "PinAssignments.h"
+#include "Events.h"
 #include "SidetoneOscillator.h"
 #include "Display.h"
-#include "Events.h"
 
 #ifdef INPUTS_TEST_HARNESS
 #include "InputsTestHarness.h"

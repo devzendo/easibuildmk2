@@ -8,14 +8,25 @@
 //=== MAIN SETUP AND LOOP
 //==============================================================================
 
+defineTaskLoop(Task1)
+{   digitalWrite(13, HIGH);
+    sleep(100);
+    digitalWrite(13, LOW);
+    sleep(100);
+}
+
 // main setup
 void setup() {
     setupPins();
     setupDisplay();
-    
+
+    setupSidetoneTimer3();
+
             // 0123456789ABCDEF
     lcd.print("Events > Console");
     Serial.begin(115200);
+        
+    mySCoop.start();
 }
 
 char buffer[50];
@@ -40,13 +51,9 @@ void eventOccurred(int eventCode) {   //     XXX ....
     Serial.println(buffer);
 }
 
-void inputPinChange(uint16_t changedPins) {
-    eventDecode(changedPins);
-}
-
 // main loop
 void loop() {
-    inputSense();
+    yield();
 }
 
 

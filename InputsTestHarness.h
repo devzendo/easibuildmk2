@@ -45,7 +45,11 @@ void setup() {
 
 // main loop
 void loop() {
-    inputSense();
+    newPins = readPins();
+    if (oldPins != newPins) {
+        oldPins = newPins;
+        inputPinChange(newPins);
+    }
 }
 
 

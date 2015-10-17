@@ -89,11 +89,13 @@ ISR(TIMER3_OVF_vect) {
                            // read value fron ROM sine table and send to PWM DAC
   OCR3A = (byte) ((double) (pgm_read_byte_near(sine256 + icnt) * volume));
   
-  if(icnt1++ == 125) {  // increment variable c4ms all 4 milliseconds
-    c4ms++;
-    icnt1=0;
+  if (icnt1++ == 125) {  // increment variable c4ms all 4 milliseconds
+      c4ms++;
+      icnt1=0;
+      newPins = readPins();
+      eventDecode(newPins);
   }
-  
+
   shapeSidetone();
 }
 

@@ -71,16 +71,5 @@ void setupPins() {
     initialPins = oldPins = newPins = readPins();
 }
 
-// forward declaration
-void inputPinChange(uint16_t changedPins);
-
-void inputSense() {
-    newPins = readPins();
-    if (oldPins != newPins) {
-        oldPins = newPins;
-        inputPinChange(newPins);
-    }
-}
-
 #endif
 

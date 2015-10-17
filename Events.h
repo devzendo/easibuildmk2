@@ -22,31 +22,69 @@ const int evTypeMask = evDah | evDit | evBtn | evLeft | evRight;
 // forward declaration
 void eventOccurred(int eventCode);
 
-// input change to event conversion, called by inputPinChange
-uint16_t oldEventPins = 0;
-uint16_t newEventPins = 0;
-uint16_t lastDah = ~dahBit;
-uint16_t lastDit = ~ditBit;
-uint16_t lastBtn = ~btnBit;
-void eventDecode(uint16_t changedPins) {
-    // do the decoding, and call eventOccurred with each event found...
-    // definitely need debouncing on the dit/dah, not so bad on encoder button.
-    uint16_t currPin = changedPins & dahBit;
-    if (currPin != lastDah) {
-        eventOccurred(evDah | (lastDah ? evOn : evOff));
-        lastDah = currPin;
+// Based on code by Jack Ganssle.
+const uint8_t checkMsec = 4;     // Read hardware every so many milliseconds
+const uint8_t pressMsec = 10;    // Stable time before registering pressed
+const uint8_t releaseMsec = 100; // Stable time before registering released
+
+class Debouncer {
+public:
+    // called every checkMsec 
+    void debounce(bool rawPinState) {
+        bool rawState;
+        keyChanged = false;
+        keyPressed = debouncedKeyPress;
+        if (rawPinState == debouncedKeyPress) {
+            // Set the timer which allows a change from current state
+            resetTimer();
+        } else {
+            // key has changed - wait for new state to become stable
+            debouncedKeyPress = rawPinState;
+            keyChanged = true;
+            keyPressed = debouncedKeyPress;
+            // And reset the timer
+            resetTimer();
+        }
     }
 
-    currPin = changedPins & ditBit;
-    if (currPin != lastDit) {
-        eventOccurred(evDit | (lastDit ? evOn : evOff));
-        lastDit = currPin;
+    // Signals the key has changed from open to closed, or the reverse.
+    bool keyChanged;
+    // The current debounced state of the key.
+    bool keyPressed;
+
+private:
+    void resetTimer() {
+        if (debouncedKeyPress) {
+            count = releaseMsec / checkMsec;
+        } else {
+            count = pressMsec / checkMsec;
+        }
     }
-        
-    currPin = changedPins & btnBit;
-    if (currPin != lastBtn) {
-        eventOccurred(evBtn | (lastBtn ? evOn : evOff));
-        lastBtn = currPin;
+
+    uint8_t count = releaseMsec / checkMsec;
+    // This holds the debounced state of the key.
+    bool debouncedKeyPress = false; 
+};
+
+Debouncer ditDebounce;
+Debouncer dahDebounce;
+Debouncer btnDebounce;
+
+// input change to event conversion, called in loop or ISR
+void eventDecode(uint16_t rawPins) {
+    // Do the decoding, and call eventOccurred with each event found...
+    // Need to debounce dit/dah, not so bad on encoder button.
+    ditDebounce.debounce(rawPins & ditBit);
+    if (ditDebounce.keyChanged) {
+        eventOccurred(evDit | (ditDebounce.keyPressed ? evOff : evOn));
+    }
+    dahDebounce.debounce(rawPins & dahBit);
+    if (dahDebounce.keyChanged) {
+        eventOccurred(evDah | (dahDebounce.keyPressed ? evOff : evOn));
+    }
+    btnDebounce.debounce(rawPins & btnBit);
+    if (btnDebounce.keyChanged) {
+        eventOccurred(evBtn | (btnDebounce.keyPressed ? evOff : evOn));
     }
     // rotary encoder....
 }
