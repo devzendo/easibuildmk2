@@ -24,8 +24,11 @@ const int evLeft = 0x10;
 const int evRight = 0x08;
 const int evTypeMask = evDah | evDit | evBtn | evLeft | evRight;
 
-// forward declaration
-void eventOccurred(int eventCode);
+defineFifo(eventFifo, int, 100)
+
+inline void eventOccurred(int eventCode) {
+    eventFifo.put(&eventCode);
+}
 
 // Based on code by Jack Ganssle.
 const uint8_t checkMsec = 4;     // Read hardware every so many milliseconds
