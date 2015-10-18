@@ -19,10 +19,10 @@
 //#define INPUTS_TEST_HARNESS
 
 // Plays the sidetone, allows frequency and volume adjustment.
-#define SIDETONE_TEST_HARNESS
+//#define SIDETONE_TEST_HARNESS
 
 // Toggles an output pin once per second. Press button to switch to next output pin.
-//#define OUTPUTS_TEST_HARNESS
+#define OUTPUTS_TEST_HARNESS
 
 // Shows interrupt handler input pin conversion to events on the serial output.
 //#define EVENTS_TEST_HARNESS
