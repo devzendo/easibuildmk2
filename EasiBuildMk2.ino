@@ -18,14 +18,14 @@
 // Displays all input pins as a bit in a binary/hex number with change count.
 //#define INPUTS_TEST_HARNESS
 
-// Plays the sidetone.
-//#define SIDETONE_TEST_HARNESS
+// Plays the sidetone, allows frequency and volume adjustment.
+#define SIDETONE_TEST_HARNESS
 
 // Toggles an output pin once per second. Press button to switch to next output pin.
 //#define OUTPUTS_TEST_HARNESS
 
 // Shows interrupt handler input pin conversion to events on the serial output.
-#define EVENTS_TEST_HARNESS
+//#define EVENTS_TEST_HARNESS
 
 #include <avr/io.h>
 #include <avr/interrupt.h>

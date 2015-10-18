@@ -8,19 +8,69 @@
 //=== MAIN SETUP AND LOOP
 //==============================================================================
 
+bool volSelected = true;
+
+void refreshDisplay() {
+    char buf[20];
+    // 0123456789ABCDEF
+    // Freq  BTN  Vol
+    // 1000 Hz <>  10
+    lcd.setCursor(5, 0);
+    lcd.print(volSelected ? ' ' : '<');
+    lcd.setCursor(9, 0);
+    lcd.print(volSelected ? '>' : ' ');
+    sprintf(buf, "%-4d  Hz <>  %2d ", (int)frequency, (int)volume);
+    lcd.setCursor(0, 1);
+    lcd.print(buf);
+}
+
+defineTaskLoop(Task1) {
+    int event;
+    if (eventFifo.get(&event)) {
+        if (event == (evBtn | evOff)) {
+            volSelected = !volSelected;
+        } else if (event == evLeft) {
+            if (volSelected) {
+                setSidetoneVolume(max(0.0, volume - 1));
+            } else {
+                setSidetoneFrequency(max(400.0, frequency - 1));
+            }
+        } else if (event == evRight) {
+            if (volSelected) {
+                setSidetoneVolume(min(10.0, volume + 1));
+            } else {
+                setSidetoneFrequency(min(800.0, frequency + 1));
+            }
+        }
+    }
+    yield();
+}
+
+// Done as a separate task, since rapid event generation from the rotary encoder causes the slow display refresh to buffer.
+defineTaskLoop(Task2) {
+    refreshDisplay();
+    sleep(250);
+}
+
 // main setup
 void setup() {
     setupPins();
     setupDisplay();
+    mySCoop.start();
 
     setupSidetoneTimer3();
+
+    lcd.setCursor(0, 0);
+            // 0123456789ABCDEF
+    lcd.print("Freq  BTN   Vol ");
+            // 1000 Hz <>   10
+    refreshDisplay();
 }
 
 // main loop
 void loop() {
-
+    yield();
 }
-
 
 #endif
 
