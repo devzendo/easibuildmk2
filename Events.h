@@ -135,7 +135,7 @@ void eventDecode(uint16_t rawPins) {
     }
     btnDebounce.debounce(rawPins & btnBit);
     if (btnDebounce.keyChanged) {
-        pressDurationDetector.keyStateChanged(btnDebounce.keyPressed);
+        pressDurationDetector.keyStateChanged(!btnDebounce.keyPressed);
         eventOccurred(evBtn | (btnDebounce.keyPressed ? evOff : evOn));
     }
 
