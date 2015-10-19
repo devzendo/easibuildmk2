@@ -73,7 +73,7 @@ public:
     void debounce(bool rawPinState) {
         bool rawState;
         keyChanged = false;
-        keyPressed = debouncedKeyPress;
+        keyReleased = debouncedKeyPress;
         if (rawPinState == debouncedKeyPress) {
             // Set the timer which allows a change from current state
             resetTimer();
@@ -81,7 +81,7 @@ public:
             // key has changed - wait for new state to become stable
             debouncedKeyPress = rawPinState;
             keyChanged = true;
-            keyPressed = debouncedKeyPress;
+            keyReleased = debouncedKeyPress;
             // And reset the timer
             resetTimer();
         }
@@ -90,7 +90,7 @@ public:
     // Signals the key has changed from open to closed, or the reverse.
     bool keyChanged;
     // The current debounced state of the key.
-    bool keyPressed;
+    bool keyReleased;
 
 private:
     void resetTimer() {
@@ -121,12 +121,12 @@ void eventDecode(uint16_t rawPins) {
     // Need to debounce dit/dah, not so bad on encoder button.
     ditDebounce.debounce(rawPins & ditBit);
     if (ditDebounce.keyChanged) {
-        eventOccurred(evDit | (ditDebounce.keyPressed ? evOff : evOn));
+        eventOccurred(evDit | (ditDebounce.keyReleased ? evOff : evOn));
     }
 
     dahDebounce.debounce(rawPins & dahBit);
     if (dahDebounce.keyChanged) {
-        eventOccurred(evDah | (dahDebounce.keyPressed ? evOff : evOn));
+        eventOccurred(evDah | (dahDebounce.keyReleased ? evOff : evOn));
     }
 
     switch (pressDurationDetector.longPressDetected()) {
@@ -135,8 +135,8 @@ void eventDecode(uint16_t rawPins) {
     }
     btnDebounce.debounce(rawPins & btnBit);
     if (btnDebounce.keyChanged) {
-        pressDurationDetector.keyStateChanged(!btnDebounce.keyPressed);
-        eventOccurred(evBtn | (btnDebounce.keyPressed ? evOff : evOn));
+        pressDurationDetector.keyStateChanged(!btnDebounce.keyReleased);
+        eventOccurred(evBtn | (btnDebounce.keyReleased ? evOff : evOn));
     }
 
     // rotary encoder....
