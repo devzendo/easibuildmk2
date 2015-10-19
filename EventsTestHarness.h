@@ -22,7 +22,12 @@ void decodeEventToSerial(int eventCode) {
     }
     if (eventCode & evButtonMask) {
         buffer[27] = ' ';
-        strcpy(buffer + 28, eventCode & evStateMask ? "ON" : "OFF");
+        switch (eventCode & evStateMask) {
+            case evOff: strcpy(buffer + 28, "OFF"); break;
+            case evOn: strcpy(buffer + 28, "ON"); break;
+            case evMedium: strcpy(buffer + 28, "MEDIUM"); break;
+            case evHard: strcpy(buffer + 28, "HARD"); break;
+        }
     } else {
         buffer[27] = '\0';
     }

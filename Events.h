@@ -11,13 +11,15 @@
 #ifndef _EVENTS_H_
 #define _EVENTS_H_
 
-const int evOn = 0x01;
 const int evOff = 0x00;
-const int evStateMask = evOn | evOff;
+const int evOn = 0x01;
+const int evMedium = 0x02;
+const int evHard = 0x03;
+const int evStateMask = evOff | evOn | evMedium | evHard;
 
-const int evDah = 0x80;
-const int evDit = 0x40;
-const int evBtn = 0x20;
+const int evDah = 0x80; // off, on
+const int evDit = 0x40; // off, on
+const int evBtn = 0x20; // off, on, medium, hard
 const int evButtonMask = evDah | evDit | evBtn;
 
 const int evLeft = 0x10;
@@ -29,6 +31,36 @@ defineFifo(eventFifo, int, 100)
 inline void eventOccurred(int eventCode) {
     eventFifo.put(&eventCode);
 }
+
+class PressDurationDetector {
+public:
+    // Called every checkMsec, to update internal timer count.
+    // returns evOff if no press in progress, or
+    // evMedium, evHard for longer presses
+    int longPressDetected() {
+        if (!keyState) {
+            return evOff;
+        }
+        switch (ticksSincePressed++) {
+            case 125: 
+                return evMedium; // 500ms after press
+            case 500:
+                keyState = false; // to prevent overflow if button held in for a long time
+                return evHard;   // 2000ms after press
+        }
+        return evOff;
+    }
+    
+    // Called whenever the debounced key state changes.
+    void keyStateChanged(bool pressed) {
+        keyState = pressed;
+        ticksSincePressed = 0;
+    }
+
+private:
+    bool keyState = false;
+    int ticksSincePressed = 0;
+};
 
 // Based on code by Jack Ganssle.
 const uint8_t checkMsec = 4;     // Read hardware every so many milliseconds
@@ -77,6 +109,7 @@ private:
 Debouncer ditDebounce;
 Debouncer dahDebounce;
 Debouncer btnDebounce;
+PressDurationDetector pressDurationDetector;
 static int8_t encoderLookupTable[] = {
     0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0
 };
@@ -90,14 +123,22 @@ void eventDecode(uint16_t rawPins) {
     if (ditDebounce.keyChanged) {
         eventOccurred(evDit | (ditDebounce.keyPressed ? evOff : evOn));
     }
+
     dahDebounce.debounce(rawPins & dahBit);
     if (dahDebounce.keyChanged) {
         eventOccurred(evDah | (dahDebounce.keyPressed ? evOff : evOn));
     }
+
+    switch (pressDurationDetector.longPressDetected()) {
+        case evMedium: eventOccurred(evBtn | evMedium); break;
+        case evHard: eventOccurred(evBtn | evHard); break;
+    }
     btnDebounce.debounce(rawPins & btnBit);
     if (btnDebounce.keyChanged) {
+        pressDurationDetector.keyStateChanged(btnDebounce.keyPressed);
         eventOccurred(evBtn | (btnDebounce.keyPressed ? evOff : evOn));
     }
+
     // rotary encoder....
     encoderValue = encoderValue << 2;
     encoderValue = encoderValue | ((rawPins & (enclBit | encrBit)) >> 5);
