@@ -29,13 +29,13 @@ defineTaskLoop(Task1) {
     if (eventFifo.get(&event)) {
         if (event == (evBtn | evOff)) {
             volSelected = !volSelected;
-        } else if (event == evLeft) {
+        } else if (event == evLeft | evFast) {
             if (volSelected) {
                 setSidetoneVolume(max(0.0, volume - 0.01));
             } else {
                 setSidetoneFrequency(max(400.0, frequency - 1));
             }
-        } else if (event == evRight) {
+        } else if (event == evRight | evFast) {
             if (volSelected) {
                 setSidetoneVolume(min(1.0, volume + 0.01));
             } else {

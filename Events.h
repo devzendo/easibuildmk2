@@ -24,13 +24,57 @@ const int evButtonMask = evDah | evDit | evBtn;
 
 const int evLeft = 0x10;
 const int evRight = 0x08;
+const int evFast = 0x01;
+const int evSlow = 0x02;
+const int evSpeedMask = evFast | evSlow;
+
 const int evTypeMask = evDah | evDit | evBtn | evLeft | evRight;
 
 defineFifo(eventFifo, int, 100)
 
+static char zut[20];
 inline void eventOccurred(int eventCode) {
-    eventFifo.put(&eventCode);
+    sprintf(zut, ">ev:0x%04X", eventCode);
+    Serial.println(zut);
+    if (!eventFifo.put(&eventCode)) {
+      Serial.println("FIFO overrun");
+    }
 }
+
+class Damper {
+public:
+    Damper(int tickDelay) {
+        delayLimit = tickDelay;
+        reset();
+    }
+
+    void reset() {
+        delay = delayLimit >> 1;
+    }
+    
+    bool left() {
+        if (delay == 0) {
+            delay = delayLimit;
+            return true;
+        } else {
+            delay--;
+            return false;
+        }
+    }
+    
+    bool right() {
+        if (delay == delayLimit) {
+            delay = 0;
+            return true;
+        } else {
+            delay++;
+            return false;
+        }
+    }
+private:
+    int delayLimit;
+    int delay;
+};
 
 class PressDurationDetector {
 public:
@@ -110,6 +154,7 @@ Debouncer ditDebounce;
 Debouncer dahDebounce;
 Debouncer btnDebounce;
 PressDurationDetector pressDurationDetector;
+Damper damper(10);
 static int8_t encoderLookupTable[] = {
     0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0
 };
@@ -135,17 +180,32 @@ void eventDecode(uint16_t rawPins) {
     }
     btnDebounce.debounce(rawPins & btnBit);
     if (btnDebounce.keyChanged) {
-        pressDurationDetector.keyStateChanged(!btnDebounce.keyReleased);
-        eventOccurred(evBtn | (btnDebounce.keyReleased ? evOff : evOn));
+        bool pressed = !btnDebounce.keyReleased;
+        pressDurationDetector.keyStateChanged(pressed);
+        if (pressed) {
+            damper.reset();
+        }
+        eventOccurred(evBtn | (pressed ? evOn : evOff));
     }
 
     // rotary encoder....
     encoderValue = encoderValue << 2;
     encoderValue = encoderValue | ((rawPins & (enclBit | encrBit)) >> 5);
     switch (encoderLookupTable[encoderValue & 0b1111]) {
-        case 0: break;
-        case 1: eventOccurred(evLeft); break;
-        case -1: eventOccurred(evRight); break;
+        case 0:
+            break;
+        case 1:
+            eventOccurred(evLeft | evFast);
+            if (damper.left()) {
+                eventOccurred(evLeft | evSlow);
+            }
+            break;
+        case -1:
+            eventOccurred(evRight | evFast);
+            if (damper.right()) {
+                eventOccurred(evRight | evSlow);
+            }
+            break;
     }
 }
 

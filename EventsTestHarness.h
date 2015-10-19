@@ -19,17 +19,23 @@ void decodeEventToSerial(int eventCode) {
         case evBtn : strcpy(buffer + 24, "BTN"); break;
         case evLeft : strcpy(buffer + 24, "<<<"); break;
         case evRight : strcpy(buffer + 24, ">>>"); break;
+        default: strcpy(buffer + 24, "???"); break;
     }
+    buffer[27] = ' ';
     if (eventCode & evButtonMask) {
-        buffer[27] = ' ';
         switch (eventCode & evStateMask) {
             case evOff: strcpy(buffer + 28, "OFF"); break;
             case evOn: strcpy(buffer + 28, "ON"); break;
             case evMedium: strcpy(buffer + 28, "MEDIUM"); break;
             case evHard: strcpy(buffer + 28, "HARD"); break;
+            default: strcpy(buffer + 28, "???"); break;
         }
     } else {
-        buffer[27] = '\0';
+        switch (eventCode & evSpeedMask) {
+            case evFast: strcpy(buffer + 28, "FAST"); break;
+            case evSlow: strcpy(buffer + 28, "SLOW"); break;
+            default: strcpy(buffer + 28, "???"); break;
+        }
     }
     Serial.println(buffer);
 }

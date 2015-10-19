@@ -33,15 +33,26 @@ defineTaskLoop(Task1) {
     int thisWhich = which;
     lcd.setCursor(11, 1);
     lcd.print('*');
+    digitalWrite(13, HIGH);
+//    Serial.print("writing ");
     for (int i=0; i<maxOutputs; i++) {
+//        Serial.print(i);
+//        Serial.print(' ');
+//        Serial.print(i == thisWhich ? HIGH : LOW);
+//        Serial.print(", ");
         digitalWrite(outputs[i].pinNo, i == thisWhich ? HIGH : LOW);
     }
-    sleep(100);
+//    Serial.println("");
+    sleep(1000);
 
+    digitalWrite(13, LOW);
     lcd.setCursor(11, 1);
     lcd.print(' ');
+//    Serial.print("writing ");
+//    Serial.print(thisWhich);
+//    Serial.println(" low");
     digitalWrite(thisWhich, LOW);
-    sleep(100);
+    sleep(1000);
 }
 
 void refreshDisplay() {
@@ -49,57 +60,30 @@ void refreshDisplay() {
     lcd.print(outputs[which].name);
 }
 
-class Damper {
-public:
-    bool left() {
-        if (delay == 0) {
-            delay = 10;
-            return true;
-        } else {
-            delay--;
-            return false;
-        }
-    }
-    
-    bool right() {
-        if (delay == 10) {
-            delay = 0;
-            return true;
-        } else {
-            delay++;
-            return false;
-        }
-    }
-private:
-    int delay = 10;
-};
-
-Damper damp;
 defineTaskLoop(Task2) {
     int event;
     bool changed = false;
     if (eventFifo.get(&event)) {
-        if (event == evLeft) {
-            if (damp.left()) {
-                changed = true;
-                if (which == 0) {
-                    which = maxOutputs - 1;
-                } else {
-                    which--;
-                }
+        Serial.print("<ev:");
+        Serial.println(event);
+        if (event == (evLeft | evSlow)) {
+            changed = true;
+            if (which == 0) {
+                which = maxOutputs - 1;
+            } else {
+                which--;
             }
-        } else if (event == evRight) {
-            if (damp.right()) {
-                changed = true;
-                if (which == maxOutputs - 1) {
-                    which = 0;
-                } else {
-                    which++;
-                }
+        } else if (event == (evRight | evSlow)) {
+            changed = true;
+            if (which == maxOutputs - 1) {
+                which = 0;
+            } else {
+                which++;
             }
         }
     }
     if (changed) {
+//        Serial.println(outputs[which].name);
         refreshDisplay();
     }
     yield();
@@ -120,6 +104,8 @@ void setup() {
     lcd.setCursor(0, 1);
     lcd.print("               ");
     which = 0;
+    Serial.begin(115200);
+
     refreshDisplay();
 }
 
