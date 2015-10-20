@@ -35,8 +35,8 @@ const int keyOut = 4;
 // Left-hand side of Arduino Micro...
 const int ddsResetOut = 14;
 const int ddsDataOut = 15;
-const int ddsClockOut = 16;
-const int ddsUpdateOut = 17;
+const int ddsUpdateOut = 16;
+const int ddsClockOut = 17;
 const int band3Out = 18;
 const int band2Out = 19;
 
