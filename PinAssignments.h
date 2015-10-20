@@ -33,12 +33,12 @@ const int keyOut = 4;
 // display is on 2 and 3, i2c.
 
 // Left-hand side of Arduino Micro...
-const int band2Out = 19;
+const int ddsResetOut = 14;
+const int ddsDataOut = 15;
+const int ddsClockOut = 16;
+const int ddsUpdateOut = 17;
 const int band3Out = 18;
-const int ddsClockOut = 14;
-const int ddsUpdateOut = 15;
-const int ddsDataOut = 16;
-const int ddsResetOut = 17;
+const int band2Out = 19;
 
 inline uint16_t readPins() {
     return (PINB & 0xF0) | ((PIND & 0x40) >> 3);
