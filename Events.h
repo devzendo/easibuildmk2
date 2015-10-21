@@ -113,7 +113,8 @@ const uint8_t releaseMsec = 100; // Stable time before registering released
 
 class Debouncer {
 public:
-    // called every checkMsec 
+    // called every checkMsec.
+    // The key state is +5v=released, 0v=pressed; there are pullup resistors.
     void debounce(bool rawPinState) {
         bool rawState;
         keyChanged = false;
