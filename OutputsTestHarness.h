@@ -23,8 +23,8 @@ struct whichData outputs[maxOutputs] = {
     { "Key       ", keyOut },
     { "DDS Reset ", ddsResetOut },
     { "DDS Data  ", ddsDataOut },
-    { "DDS Clock ", ddsClockOut },
-    { "DDS Update", ddsUpdateOut }
+    { "DDS Update", ddsUpdateOut },
+    { "DDS Clock ", ddsClockOut }
 };
 
 
