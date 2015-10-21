@@ -27,6 +27,15 @@ struct whichData outputs[maxOutputs] = {
     { "DDS Update", ddsUpdateOut }
 };
 
+
+void refreshDisplay() {
+    lcd.setCursor(0, 1);
+    lcd.print(outputs[which].name);
+    Serial.println(outputs[which].name);
+}
+
+
+int autoloop = 0;
 defineTaskLoop(Task1) {
             // 0123456789ABCDEF
             // DDS Update *
@@ -53,11 +62,19 @@ defineTaskLoop(Task1) {
 //    Serial.println(" low");
     digitalWrite(thisWhich, LOW);
     sleep(1000);
-}
-
-void refreshDisplay() {
-    lcd.setCursor(0, 1);
-    lcd.print(outputs[which].name);
+    
+    if (autoloop == 10) {
+        autoloop = 0;
+        if (which == maxOutputs - 1) {
+            which = 0;
+        } else {
+            which++;
+        }
+        refreshDisplay();
+    } else {
+        autoloop++;
+    }
+    
 }
 
 defineTaskLoop(Task2) {
@@ -91,8 +108,10 @@ defineTaskLoop(Task2) {
 
 // main setup
 void setup() {
+    which = 0;
     setupPins();
     setupDisplay();
+    Serial.begin(115200);
 
     mySCoop.start();
 
@@ -103,8 +122,6 @@ void setup() {
     lcd.print("Choose O/P  <> ");
     lcd.setCursor(0, 1);
     lcd.print("               ");
-    which = 0;
-    Serial.begin(115200);
 
     refreshDisplay();
 }
