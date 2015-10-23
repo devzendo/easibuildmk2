@@ -43,24 +43,17 @@ defineTaskLoop(Task1) {
     lcd.setCursor(11, 1);
     lcd.print('*');
     digitalWrite(13, HIGH);
-//    Serial.print("writing ");
+    Serial.println("HIGH");
     for (int i=0; i<maxOutputs; i++) {
-//        Serial.print(i);
-//        Serial.print(' ');
-//        Serial.print(i == thisWhich ? HIGH : LOW);
-//        Serial.print(", ");
         digitalWrite(outputs[i].pinNo, i == thisWhich ? HIGH : LOW);
     }
-//    Serial.println("");
     sleep(1000);
 
     digitalWrite(13, LOW);
     lcd.setCursor(11, 1);
     lcd.print(' ');
-//    Serial.print("writing ");
-//    Serial.print(thisWhich);
-//    Serial.println(" low");
-    digitalWrite(thisWhich, LOW);
+    Serial.println("LOW");
+    digitalWrite(outputs[thisWhich].pinNo, LOW);
     sleep(1000);
     
     if (autoloop == 10) {

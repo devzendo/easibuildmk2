@@ -5,8 +5,17 @@
 #ifndef _TRANSCEIVER_H_
 #define _TRANSCEIVER_H_
 
+#include "Controllers.h"
 #include "Menu.h"
 
+ControllerStack controllerStack;
+
+volatile double ddsFrequency;
+double ddsDigitDelta;
+double lowerBandBound;
+double upperBandBound;
+
+/*
 class NumberedList immediateMenu = {
    8, 
    {
@@ -52,10 +61,6 @@ const int modeImmediate = 1;
 const int modeSetup = 2;
 volatile int mode;
 
-volatile double ddsFrequency;
-double ddsDigitDelta;
-double lowerBandBound;
-double upperBandBound;
 
 void refreshOperator() {
 }
@@ -104,7 +109,7 @@ void eventImmediate(int event) {
 
 void eventSetup(int event) {
 }
-
+*/
 //==============================================================================
 //=== SCOOP TASKS
 //==============================================================================
@@ -112,11 +117,13 @@ void eventSetup(int event) {
 defineTaskLoop(Task1) {
     int event;
     if (eventFifo.get(&event)) {
+      /*
         switch (mode) {
             case modeOperator: eventOperator(event); break;
             case modeImmediate: eventImmediate(event); break;
             case modeSetup: eventSetup(event); break;
         }
+        */
     }
     yield();
 }
@@ -154,7 +161,7 @@ void initialise() {
     lowerBandBound = 14000000.0;
     upperBandBound = 14350000.0;
     // goto determined mode
-    switchMode(modeOperator);
+    //switchMode(modeOperator);
 }
 
 // main setup

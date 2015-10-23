@@ -13,7 +13,7 @@
 // "Out of the box", as checked into the repository, you get 1. If you want to
 // build one of the test harnesses, uncomment the appropriate line:
 
-//#define TRANSCEIVER
+#define TRANSCEIVER
 
 // Displays all input pins as a bit in a binary/hex number with change count.
 //#define INPUTS_TEST_HARNESS
@@ -22,7 +22,7 @@
 //#define SIDETONE_TEST_HARNESS
 
 // Toggles an output pin once per second. Press button to switch to next output pin.
-#define OUTPUTS_TEST_HARNESS
+//#define OUTPUTS_TEST_HARNESS
 
 // Shows interrupt handler input pin conversion to events on the serial output.
 //#define EVENTS_TEST_HARNESS
@@ -35,6 +35,13 @@
 #include <Arduino.h> 
 
 #include <SCoop.h>
+
+// Copied from SCoop.cpp, but not exposed
+#define AVR_ATOMIC for ( uint8_t sreg_save __attribute__((__cleanup__(__iRestore))) = SREG, __ToDo = __iCliRetVal() ; __ToDo ;  __ToDo = 0 )
+static inline void __iRestore(const  uint8_t *__s) { SREG = *__s; asm volatile ("" ::: "memory"); }
+static inline uint8_t __iCliRetVal(void) { noInterrupts(); return 1; }
+// End of copy of SCoop
+
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 
