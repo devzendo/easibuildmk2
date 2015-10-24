@@ -32,6 +32,8 @@ const int sidetoneOut = 5;  // PWM, with RC low-pass filter network to convert
 const int keyOut = 4;
 // display is on 2 and 3, i2c.
 
+const int internalLed = 13;
+
 // Left-hand side of Arduino Micro...
 const int ddsResetOut = 18;
 const int ddsDataOut = 19;
@@ -55,6 +57,8 @@ void setupPins() {
     pinMode(encrIn, INPUT_PULLUP);
     pinMode(enclIn, INPUT_PULLUP);
     pinMode(btnIn, INPUT_PULLUP);
+
+    pinMode(internalLed, OUTPUT);
     
     pinMode(band1Out, OUTPUT);
     pinMode(band2Out, OUTPUT);
