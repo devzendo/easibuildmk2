@@ -11,33 +11,42 @@
 #ifndef _EVENTS_H_
 #define _EVENTS_H_
 
-const int evOff = 0x00;
-const int evOn = 0x01;
-const int evMedium = 0x02;
-const int evHard = 0x03;
-const int evStateMask = evOff | evOn | evMedium | evHard;
+const int evOff        = 0x00; // all buttons/key/paddle
+const int evOn         = 0x01; // all buttons/key/paddle
+const int evMedium     = 0x02; // button only medium press
+const int evHard       = 0x03; // button only longer press
+const int evStateMask  = evOff | evOn | evMedium | evHard;
 
-const int evDah = 0x80; // off, on
-const int evDit = 0x40; // off, on
-const int evBtn = 0x20; // off, on, medium, hard
+const int evDah        = 0x80; // off, on
+const int evDit        = 0x40; // off, on
+const int evBtn        = 0x20; // off, on, medium, hard
 const int evButtonMask = evDah | evDit | evBtn;
 
-const int evLeft = 0x10;
-const int evRight = 0x08;
-const int evFast = 0x01;
-const int evSlow = 0x02;
-const int evSpeedMask = evFast | evSlow;
+const int evLeft       = 0x10;
+const int evRight      = 0x08;
+const int evEncoderMask = evLeft | evRight;
 
-const int evTypeMask = evDah | evDit | evBtn | evLeft | evRight;
+const int evFast       = 0x01; // rotary encoder normal events
+const int evSlow       = 0x02; // rotary envoder damped events
+const int evSpeedMask  = evFast | evSlow;
+
+const int evTimerTick  = 0x04;
+
+const int evTypeMask   = evDah | evDit | evBtn | evLeft | evRight | evTimerTick;
 
 defineFifo(eventFifo, int, 100)
+
+defineTimerRun(eventQueueingTimer, 0) {
+    static int tickEvent = evTimerTick;
+    eventFifo.put(&tickEvent);
+}
 
 static char zut[20];
 inline void eventOccurred(int eventCode) {
     sprintf(zut, ">ev:0x%04X", eventCode);
     Serial.println(zut);
     if (!eventFifo.put(&eventCode)) {
-      Serial.println("FIFO overrun");
+        Serial.println("FIFO overrun");
     }
 }
 

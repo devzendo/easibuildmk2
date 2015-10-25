@@ -9,6 +9,7 @@
 //==============================================================================
 char buffer[50];
 int countx = 0;
+int hardCount = 0;
 void decodeEventToSerial(int eventCode) {
                                       //     XXX ....
               //     0123456789012345678901234567890
@@ -19,25 +20,36 @@ void decodeEventToSerial(int eventCode) {
         case evBtn : strcpy(buffer + 24, "BTN"); break;
         case evLeft : strcpy(buffer + 24, "<<<"); break;
         case evRight : strcpy(buffer + 24, ">>>"); break;
+        case evTimerTick : strcpy(buffer + 24, "TIM"); break;
         default: strcpy(buffer + 24, "???"); break;
     }
-    buffer[27] = ' ';
+
     if (eventCode & evButtonMask) {
         switch (eventCode & evStateMask) {
-            case evOff: strcpy(buffer + 28, "OFF"); break;
-            case evOn: strcpy(buffer + 28, "ON"); break;
-            case evMedium: strcpy(buffer + 28, "MEDIUM"); break;
-            case evHard: strcpy(buffer + 28, "HARD"); break;
-            default: strcpy(buffer + 28, "???"); break;
+            case evOff: strcpy(buffer + 27, " OFF"); break;
+            case evOn: strcpy(buffer + 27, " ON"); break;
+            case evMedium: strcpy(buffer + 27, " MEDIUM"); break;
+            case evHard: strcpy(buffer + 27, " HARD"); break;
+            default: strcpy(buffer + 27, " ???"); break;
         }
     } else {
-        switch (eventCode & evSpeedMask) {
-            case evFast: strcpy(buffer + 28, "FAST"); break;
-            case evSlow: strcpy(buffer + 28, "SLOW"); break;
-            default: strcpy(buffer + 28, "???"); break;
+        if (eventCode & evEncoderMask) {
+            switch (eventCode & evSpeedMask) {
+                case evFast: strcpy(buffer + 27, " FAST"); break;
+                case evSlow: strcpy(buffer + 27, " SLOW"); break;
+                default: strcpy(buffer + 27, " ???"); break;
+            }
         }
     }
     Serial.println(buffer);
+    
+    // 2 hard presses triggers a 2 second timer.
+    if (eventCode == (evBtn | evHard)) {
+        if (++hardCount == 2) {
+            eventQueueingTimer.schedule(2000, 1);
+            hardCount = 0;
+        }
+    }
 }
 
 defineTaskLoop(Task1) {
