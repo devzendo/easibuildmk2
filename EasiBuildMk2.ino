@@ -13,7 +13,7 @@
 // "Out of the box", as checked into the repository, you get 1. If you want to
 // build one of the test harnesses, uncomment the appropriate line:
 
-#define TRANSCEIVER
+//#define TRANSCEIVER
 
 // Displays all input pins as a bit in a binary/hex number with change count.
 //#define INPUTS_TEST_HARNESS
@@ -26,6 +26,9 @@
 
 // Shows interrupt handler input pin conversion to events on the serial output.
 //#define EVENTS_TEST_HARNESS
+
+// Controls the DDS frequency with encoder. Medium button press to change bands.
+#define DDS_TEST_HARNESS
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -64,6 +67,10 @@ static inline uint8_t __iCliRetVal(void) { noInterrupts(); return 1; }
 
 #ifdef EVENTS_TEST_HARNESS
 #include "EventsTestHarness.h"
+#endif
+
+#ifdef DDS_TEST_HARNESS
+#include "DDSTestHarness.h"
 #endif
 
 #ifdef TRANSCEIVER
