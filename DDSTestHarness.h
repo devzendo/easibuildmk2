@@ -35,7 +35,7 @@ void displayBand() {
 }
 
 char buffer[50];
-void display() {
+void displayFrequency() {
     lcd.setCursor(0, 1);
 //[ 1800000]
 // 0123456789012345
@@ -75,7 +75,7 @@ void processEvent(int eventCode) {
         }
     }
     if (change) {
-        display();
+        displayFrequency();
         setDDSFrequency();
     }
 }
@@ -103,7 +103,7 @@ void setup() {
     currBand = 4;
     lcd.clear();
     displayBand();
-    display();
+    displayFrequency();
     setDDSFrequency();
     
     Serial.begin(115200);

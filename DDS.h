@@ -12,8 +12,7 @@
 typedef long Hz;
 
 class DDS {
-  
-    public:
+public:
     
     void resetDDS() {
         digitalWrite(ddsResetOut, HIGH);
@@ -28,7 +27,7 @@ class DDS {
     // This used to be a double...
     void setDDSFrequency(Hz Hz) {
         // Calculate the DDS word - from AD9850 Datasheet
-        int32_t f = Hz * 4294967295/125000000;
+        int32_t f = Hz * ddsWordMultiplier;
     
         // Send one byte at a time
         for (int b=0; b<4; b++, f>>=8){
@@ -45,9 +44,11 @@ class DDS {
         digitalWrite(ddsUpdateOut, LOW);
     }
     
-    private:
+private:
+    static const int32_t ddsWordMultiplier = 4294967295/125000000;
+    
     // Bit bang the byte over the SPI bus 
-    void sendDDSByte(byte dataToSend){ 
+    void sendDDSByte(byte dataToSend) { 
         for (int i=0; i<8; i++, dataToSend>>=1){
             // Set Data bit on output pin 
             digitalWrite(ddsDataOut, dataToSend & 0x01);
