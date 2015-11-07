@@ -41,11 +41,11 @@ void displayFrequency() {
 // 0123456789012345
               //     0123456789012345678901234567890
     sprintf(buffer, "%8ld", bands[currBand].currHz);
-    lcd.write(buffer, 3);
+    lcd.write(buffer, 2);
     lcd.print('.');
-    lcd.write(buffer + 3, 3);
+    lcd.write(buffer + 2, 3);
     lcd.print('.');
-    lcd.write(buffer + 6, 2);
+    lcd.write(buffer + 5, 3);
     lcd.print(" MHz");
 }
 
