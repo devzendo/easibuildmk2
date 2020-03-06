@@ -8,7 +8,111 @@
 #include "Controllers.h"
 #include "Menu.h"
 
-ControllerStack controllerStack;
+
+class FakeSetupMode: public Controller {
+    char *name() {
+        return "FSM";
+    }
+    void enter() {
+        lcd.setCursor(0, 0);
+                // 0123456789ABCDEF
+        lcd.print("Setup     mode  ");
+        lcd.setCursor(0, 1);
+        lcd.print("                ");
+    }
+    void exit() {
+    }
+    
+    void processEvent(int event) {
+        if (event & (evHard | evMedium) != 0) {
+            controllerStack.pop();
+        }
+    }
+
+} fakeSetupMode;
+
+class FakeImmediateMode: public Controller {
+    char *name() {
+        return "FIM";
+    }
+    void enter() {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+                // 0123456789ABCDEF
+        lcd.print("Immediate mode  ");
+        lcd.setCursor(0, 1);
+        lcd.print("                ");
+    }
+    void exit() {
+    }
+    
+    void processEvent(int event) {
+        if ((event & evHard) == evHard) {
+            controllerStack.push(&fakeSetupMode);
+            return;
+        }
+        if ((event & (evHard | evMedium)) != 0) {
+            controllerStack.pop();
+        }
+    }
+
+} fakeImmediateMode;
+
+class FakeOperatingMode: public Controller {
+    char *name() {
+        return "FOM";
+    }
+
+    void enter() {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+                // 0123456789ABCDEF
+        lcd.print("14,060.00 MHz   ");
+        lcd.setCursor(0, 1);
+        lcd.print("RX            P ");
+    }
+    void exit() {
+    }
+    
+    void processEvent(int event) {
+        if (event & evMedium == evMedium) {
+            controllerStack.push(&fakeImmediateMode);
+        }
+    }
+
+} fakeOperatingMode;
+
+char *version="0.0"; // only ever x.x, more requires rework below...
+class WelcomeController: public Controller {
+    char *name() {
+        return "WEL";
+    }
+
+    void enter() {
+        char buf[20];
+        lcd.clear();
+        lcd.setCursor(0, 0);
+                // 0123456789ABCDEF
+        lcd.print("EasiBuild Mk 2  ");
+        lcd.setCursor(0, 1);
+        sprintf(buf, "v%s, M0CUV  ", version);
+        lcd.print(buf);
+
+        eventQueueingTimer.schedule(2000, 1);
+    }
+    
+    void exit() {
+    }
+    
+    void processEvent(int event) {
+        if ((event & evTimerTick) || (event & evBtn)) {
+          Serial.println("wel processing event");
+//        eventQueueingTimer.schedule(0); // stop timer
+          controllerStack.pop();
+        }
+    }
+
+} welcomeController;
 
 volatile double ddsFrequency;
 double ddsDigitDelta;
@@ -114,38 +218,26 @@ void eventSetup(int event) {
 //=== SCOOP TASKS
 //==============================================================================
 
-defineTaskLoop(Task1) {
-    int event;
-    if (eventFifo.get(&event)) {
-      /*
-        switch (mode) {
-            case modeOperator: eventOperator(event); break;
-            case modeImmediate: eventImmediate(event); break;
-            case modeSetup: eventSetup(event); break;
-        }
-        */
-    }
-    yield();
-}
-
 //==============================================================================
 //=== MAIN SETUP AND LOOP
 //==============================================================================
 
-char *version="0.0"; // only ever x.x, more requires rework below...
-
 // Also called by factory reset
 void initialise() {
     char buf[20];
+    Serial.println("initialising pins");
     setupPins();
-    setupSidetoneTimer3();
+    Serial.println("initialising controllers");
 
-    lcd.setCursor(0, 0);
-            // 0123456789ABCDEF
-    lcd.print("EasiBuild Mk 2  ");
-    lcd.setCursor(0, 1);
-    sprintf(buf, "v%s, M0CUV  ", version);
-    lcd.print(buf);
+    controllerStack.reset();
+    Serial.println("initialising sidetone timer");
+
+    setupSidetoneTimer3();
+    
+    Serial.println("push fom");
+    controllerStack.push(&fakeOperatingMode);
+    Serial.println("push wel");
+    controllerStack.push(&welcomeController);
     
     // start timer for 1sec to switch to next mode
     // check nvram checksum
@@ -169,6 +261,12 @@ void initialise() {
 void setup() {
     setupDisplay();
     Serial.begin(115200);
+    for (int i=0; i<50; i++) {
+        Serial.println("waiting 5 seconds");
+        sleep(100);
+    }
+    
+    Serial.println("setup scoop");
     mySCoop.start();
 
     initialise();

@@ -10,7 +10,7 @@
 // CHANGE_PINS
 // Right-hand side of Arduino Micro...
 // Input pins are all on PINB or PIND for rapid reading in the interrupt service routine.
-const int dahIn = 12; // PIND
+const int dahIn = 12; // PIND - am I sure about this? PINB is digital pin 8 to 13?
 const int dahBit = 0x08;
 
 const int ditIn = 11; // PINB
@@ -23,7 +23,7 @@ const int enclIn = 9; // PINB
 const int enclBit = 0x40;
 
 const int btnIn = 8;  // PINB
-const int btnBit = 0x10;
+const int btnBit = 0x10; // sure about this? isn't this 0x01?
 
 const int band1Out = 7;
 const int rxtxOut = 6;
